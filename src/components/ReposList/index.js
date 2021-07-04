@@ -1,19 +1,17 @@
 import './ReposList.css'
 import { useEffect, useState } from 'react'
+import RepoItem from '../RepoItem'
 
 export default function ReposList() {
     const [repos,setRepos] = useState([])
     const [total_count,setTotalCount] = useState(0)
     const [page,setPage] = useState(0)
     
-    const getStartCreationDate = ()=>{
+    const fetchRepos = async (page)=>{
         var today = new Date()
         var prior_date = new Date().setDate(today.getDate()-30)
-        return new Date(prior_date).toISOString().substr(0,10)
-    }
+        const creation_date = new Date(prior_date).toISOString().substr(0,10)
 
-    const fetchRepos = async (page)=>{
-        const creation_date = getStartCreationDate()
         const response = await fetch(`https://api.github.com/search/repositories?q=created:>${creation_date}&sort=stars&order=desc&page=${page}`)
         const {total_count,items} = await response.json()
         
@@ -25,6 +23,8 @@ export default function ReposList() {
                 description: item.description,
                 stars_count: item.stargazers_count,
                 issues_count: item.open_issues_count,
+                created_at: (new Date(today - new Date(item.created_at))).getDate(),
+                url: item.html_url,
                 owner:{
                     username: item.owner.login,
                     avatar: item.owner.avatar_url
@@ -40,18 +40,13 @@ export default function ReposList() {
 
     const renderRepos = ()=>{
         return repos.map(repo=>(
-            <div key={repo.id}>
-                {repo.name} by: {repo.owner.username}
-            </div>
+            <RepoItem key={repo.id} repo={repo} />
         ))
     }
 
     return (
         <div className="ReposList">
-            <h5>Total Count last 30 days: {total_count}</h5>
-            {
-                renderRepos()
-            }
+            {renderRepos()}
         </div>
     )
 }
